@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DispoCam Filter</title>
+</head>
+<style>
+    @font-face {
+        font-family: digital;
+        src: url("Date Stamp Bold.otf") format("opentype");
+    }
+
+    body {
+        margin: 0;
+        overflow: hidden;
+    }
+
+    .imageInputLabel {
+        border: solid 2px #db810a;
+        color: #db810a;
+        font-family: digital, monospace;
+        padding: 5px 20px;
+        cursor: pointer;
+        font-size: 30px;
+    }
+    .imageInputLabel:hover {
+        background-color: #db810a;
+        color: #fff;
+    }
+</style>
+<body>
+
+<!-- credit: https://www.emanueleferonato.com/2018/06/09/playing-with-javascript-photos-and-3d-luts-lookup-tables/ -->
+<!-- credit: https://gist.github.com/kishmiryan-karlen/559c190f6c20856ee323 -->
+
+<div style="background-color: darkolivegreen; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <!-- TITLE -->
+    <div style="width: 100vw; display: flex; justify-content: center; align-items: center;">
+        <div style="background-color: #0c1e2a; color: #db810a; font-size: 60px; font-family: digital, monospace; padding: 5px 20px;">
+            DISPOCAM FILTER
+        </div>
+    </div>
+
+    <!-- UPLOADED IMAGE | HIDDEN -->
+    <div style="text-align:center; display: none;">
+        <p>UPLOADED IMAGE:</p>
+        <canvas id="imageCanvas" width="640" height="480" style="border: 2px solid black"></canvas>
+    </div>
+
+    <!-- UPLOAD IMAGE BUTTON -->
+    <div style="text-align:center;">
+        <br>
+        <label for="imageInput" class="custom-file-upload imageInputLabel">
+            UPLOAD IMAGE
+        </label>
+        <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload()" style="display: none;">
+    </div>
+
+    <!-- LOADING -->
+    <div id="loadingAnimationAndStatic" style="width: 100vw; text-align: center; padding: 20px 0px; font-family: digital, monospace; font-size: 20px; display: none;">
+        LOADING <span id="loadingAnimation"></span>
+    </div>
+
+    <!-- LUT IMAGE | HIDDEN -->
+    <div style="text-align: center; display: none;">
+        <canvas id="lutCanvas" width="512" height="512" style="border: 2px solid black"></canvas>
+    </div>
+
+    <!-- RESULT IMAGE -->
+    <div id="resultImageDisplay" style="text-align: center; display: none;">
+        <canvas id="resultCanvas" width="640" height="480" style="border: 2px solid black; margin-top: 20px;"></canvas>
+    </div>
+    <br>
+
+    <!-- DOWNLOAD BUTTON -->
+    <div style="text-align: center;">
+        <div>
+            <a id="downloadButton" class="imageInputLabel" href="#" download="result_image.png" style="display: none;">DOWNLOAD</a>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    let loadingSeconds = 2; // lol it loads instantly but it's kinda exciting waiting for it to finish
+
+    // Code to animate loading symbol
+    var loadingAnimation = document.getElementById("loadingAnimation");
+    var frames = [".", "..", "...", ""];
+    var currentFrame = 0;
+
+    setInterval(function () {
+        loadingAnimation.textContent = frames[currentFrame];
+        currentFrame = (currentFrame + 1) % frames.length;
+    }, 400);
+
+
+
+    var imagesLoaded = 0;
+
+    function URLToCanvas(url, id) {
+        var theCanvas = document.getElementById(id);
+        var context = theCanvas.getContext("2d");
+        var img = new Image();
+        img.src = url;
+        img.onload = function () {
+            context.drawImage(img, 0, 0);
+            imagesLoaded++;
+            if (imagesLoaded === 2) {
+                applyLUT("imageCanvas", "lutCanvas", "resultCanvas");
+            }
+        };
+    }
+
+    function handleImageUpload() {
+        // Do immediately after file is submitted
+        document.getElementById("loadingAnimationAndStatic").style.display = "inline-block";
+
+        // Do after [loadingSeconds] seconds
+        setTimeout(function() {
+            document.getElementById("loadingAnimationAndStatic").style.display = "none";
+            document.getElementById("resultImageDisplay").style.display = "flex";
+
+            var input = document.getElementById("imageInput");
+            var file = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function (event) {
+                URLToCanvas(event.target.result, "imageCanvas");
+                applyLUT("imageCanvas", "lutCanvas", "resultCanvas");
+            };
+            reader.readAsDataURL(file);
+        }, loadingSeconds * 1000); //wait # seconds before doing what is above
+    }
+
+    URLToCanvas("vintageLUT.png", "lutCanvas");
+
+    function applyLUT(imageID, lutID, resultID) {
+        var imageContext = document.getElementById(imageID).getContext("2d");
+        var lutContext = document.getElementById(lutID).getContext("2d");
+        var imageData = imageContext.getImageData(0, 0, 640, 480);
+        var lutData = lutContext.getImageData(0, 0, 512, 512);
+        for (var i = 0; i < imageData.data.length; i += 4) {
+            var r = Math.floor(imageData.data[i] / 4);
+            var g = Math.floor(imageData.data[i + 1] / 4);
+            var b = Math.floor(imageData.data[i + 2] / 4);
+            var lutX = (b % 8) * 64 + r;
+            var lutY = Math.floor(b / 8) * 64 + g;
+            var lutIndex = (lutY * 512 + lutX) * 4;
+            imageData.data[i] = lutData.data[lutIndex];
+            imageData.data[i + 1] = lutData.data[lutIndex + 1];
+            imageData.data[i + 2] = lutData.data[lutIndex + 2];
+        }
+        document.getElementById(resultID).getContext("2d").putImageData(imageData, 0, 0);
+
+        // Show the download button
+        document.getElementById("downloadButton").style.display = "inline";
+        // Set the download URL to the result canvas data
+        document.getElementById("downloadButton").href = document.getElementById(resultID).toDataURL();
+    }
+</script>
+
+</body>
+</html>
