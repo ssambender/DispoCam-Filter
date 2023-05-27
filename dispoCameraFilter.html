@@ -43,6 +43,8 @@
     https://gist.github.com/kishmiryan-karlen/559c190f6c20856ee323
 -->
 
+<img id="tempImage" style="position:absolute; display: none;" src=""/>
+
 <!-- SPLASH DATESTAMP -->
 <div style="position:absolute; bottom: 0; right: 1vw; font-family: digital, monospace; font-size: 2vw; color: #db810a;">
     <div id="homeScreenDate">00 00 '00</div>
@@ -130,6 +132,7 @@
 </div>
 
 <script>
+    //import mergeImages from 'merge-images';
 
     let loadingSeconds = 1; // lol it can load instantly, but it's kinda exciting waiting for it to finish
     let tempVarImage;
@@ -200,7 +203,7 @@
     function applyLUT(imageID, lutID, resultID) {
         var imageContext = document.getElementById(imageID).getContext("2d");
         var lutContext = document.getElementById(lutID).getContext("2d");
-        var imageData = imageContext.getImageData(0, 0, 1500, 1000);  // TODO - make size of cropped image
+        var imageData = imageContext.getImageData(0, 0, 1500, 1000);
         var lutData = lutContext.getImageData(0, 0, 512, 512);
         for (var i = 0; i < imageData.data.length; i += 4) {
             var r = Math.floor(imageData.data[i] / 4);
@@ -217,12 +220,21 @@
 
         // Show the download button
         document.getElementById("downloadButton").style.display = "inline";
-        // Set the download URL to the result canvas data
-        document.getElementById("downloadButton").href = document.getElementById(resultID).toDataURL();
+
+
+
+        // the image that just got filtered is in base64 at this stage
+        let encoded64 = document.getElementById(resultID).toDataURL();
+
+        //todo -
+        mergeImages([encoded64, 'SPECKSOVERLAY.PNG', 'GRAINOVERLAY.png']).then(b64 => {
+            document.getElementById("tempImage").src = b64
+            document.getElementById("downloadButton").href = document.getElementById("tempImage").src;
+        });
     }
     // -----------------------------------------------------------------------
 </script>
-
+<script src="https://unpkg.com/merge-images"></script>
 <script src="https://unpkg.com/jquery@3/dist/jquery.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/bootstrap@4/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 <script src="cropper.js"></script>
