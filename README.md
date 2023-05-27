@@ -1,2 +1,14 @@
 # DispoCam-Filter
-Disposable camera filter effect for uploaded images.
+### Disposable camera filter effect for uploaded images.
+- Upload any format of image file
+- Choose cropping dimensions and scale
+- Within seconds, a filtered image will be available to download
+- Image looks like it was taken on a disposable camera, and has date stamp from image metadata
+<br>
+
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/ssambender/DispoCam-Filter/blob/main/FLOWERS.jpg" height="180px" alt="Project Image2">
+  <img src="https://github.com/ssambender/DispoCam-Filter/blob/main/QUAD.jpg" height="180px" alt="Project Image2">
+  <img src="https://github.com/ssambender/DispoCam-Filter/blob/main/FOX.jpg" height="180px" alt="Project Image2">
+  <img src="https://github.com/ssambender/DispoCam-Filter/blob/main/PINBALL.jpg" height="180px" alt="Project Image2">
+<div>
