@@ -78,7 +78,7 @@
     </div>
 
     <!-- UPLOAD IMAGE BUTTON -->
-    <div style="text-align:center;">
+    <div style="text-align:center;" id="uploadImageForDispo">
         <br>
         <label for="input" class="custom-file-upload imageInputLabel">
             UPLOAD IMAGE
@@ -171,7 +171,8 @@
 
     function downloadFinalImage() {
         setTimeout(function() {
-            location.reload();
+            //location.reload();
+            console.log("download button clicked");
         }, 1000); //wait 1 second
     }
 
@@ -236,6 +237,7 @@
 
         // Show the download button
         document.getElementById("downloadButton").style.display = "inline";
+        document.getElementById("uploadImageForDispo").style.display = "none";
 
 
 
