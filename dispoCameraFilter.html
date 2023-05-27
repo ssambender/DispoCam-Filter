@@ -103,10 +103,15 @@
     </div>
     <br>
 
+    <div id="makeAnotherDispoContainer" style="flex-direction: column; display: none; text-align: center; color: #fff;">
+        <div style="font-family: digital, monospace;">YOUR FILE HAS BEEN SAVED</div><br>
+        <div class="imageInputLabel" onclick="location.reload();">MAKE ANOTHER</div>
+    </div>
+
     <!-- DOWNLOAD BUTTON -->
     <div style="text-align: center;">
         <div>
-            <a id="downloadButton" class="imageInputLabel" href="#" download="result_image.png" style="display: none; text-decoration: none;" onclick="downloadFinalImage();">DOWNLOAD</a>
+            <a id="downloadButton" class="imageInputLabel" href="#" download="result_image.png" style="display: none; text-decoration: none;">DOWNLOAD</a>
         </div>
     </div>
 
@@ -133,8 +138,8 @@
                         </div>
                     </div>
                     <div class="modal-footer" style="border-top: 1px solid #db810a;">
-                        <button type="button" class="imageInputLabelCropper" data-dismiss="modal">Cancel</button>
-                        <button type="button" class="imageInputLabelCropper" id="crop">Crop</button>
+                        <button type="button" class="imageInputLabelCropper" data-dismiss="modal">CANCEL</button>
+                        <button type="button" class="imageInputLabelCropper" id="crop">CROP</button>
                     </div>
                 </div>
             </div>
@@ -146,6 +151,8 @@
 <script>
     let loadingSeconds = 1; // lol it can load instantly, but it's kinda exciting waiting for it to finish
     let tempVarImage;
+
+    let uploadedFileName = "";
 
     // Get current date
     var currentDate = new Date();
@@ -169,13 +176,6 @@
         currentFrame = (currentFrame + 1) % frames.length;
     }, 400);
 
-    function downloadFinalImage() {
-        setTimeout(function() {
-            //location.reload();
-            console.log("download button clicked");
-        }, 1000); //wait 1 second
-    }
-
     // ------------------------- Apply the LUT -------------------------------
     var imagesLoaded = 0;
 
@@ -196,6 +196,7 @@
     function handleImageUpload() {
         // Do immediately after file is submitted
         document.getElementById("loadingAnimationAndStatic").style.display = "inline-block";
+        document.getElementById("uploadImageForDispo").style.display = "none";
 
         // Do after [loadingSeconds] seconds
         setTimeout(function() {
@@ -212,10 +213,16 @@
                 applyLUT("imageCanvas", "lutCanvas", "resultCanvas");
             };
             reader.readAsDataURL(file);
+
+            var originalFileName = file.name;
+
+            // TODO - pop up box that says "FILE WAS DOWNLOAD" and a "CLICK TO DO ANOTHER" button which reloads page
         }, loadingSeconds * 1000); //wait # seconds before doing what is above
     }
 
     URLToCanvas("vintageLUT.png", "lutCanvas");
+
+    let encoded64;
 
     function applyLUT(imageID, lutID, resultID) {
         var imageContext = document.getElementById(imageID).getContext("2d");
@@ -236,22 +243,37 @@
         document.getElementById(resultID).getContext("2d").putImageData(imageData, 0, 0);
 
         // Show the download button
-        document.getElementById("downloadButton").style.display = "inline";
+        //document.getElementById("downloadButton").style.display = "inline";
         document.getElementById("uploadImageForDispo").style.display = "none";
-
-
+        document.getElementById("makeAnotherDispoContainer").style.display = "flex";
 
         // the image that just got filtered is in base64 at this stage
-        let encoded64 = document.getElementById(resultID).toDataURL();
+        encoded64 = document.getElementById(resultID).toDataURL();
 
+        if(imagesLoaded > 1){
+            callTempFunc();
+        }
+    }
+
+    function callTempFunc() {
+        function downloadMergedImage(base64) {
+            const link = document.createElement('a');
+            link.href = base64;
+
+
+            console.log(uploadedFileName);
+            link.download = uploadedFileName + 'dispo.png';
+
+            // Dispatch a click event on the link element to trigger the download
+            link.dispatchEvent(new MouseEvent('click'));
+        }
 
         mergeImages([encoded64, 'SPECKSOVERLAY.PNG', 'GRAINOVERLAY.png']).then(b64 => {
-            //document.getElementById("tempImage").src = b64;
-            //document.getElementById("downloadButton").href = document.getElementById("tempImage").src;
-            document.getElementById("downloadButton").href = b64;
+            // Trigger the download after the Promise resolves
+            downloadMergedImage(b64);
         });
-
     }
+
     // -----------------------------------------------------------------------
 </script>
 <script src="https://unpkg.com/merge-images"></script>
@@ -296,6 +318,10 @@
 
             if (files && files.length > 0) {
                 file = files[0];
+
+                // saves the initial upload as uploadedFileName
+                uploadedFileName = file.name.replace(/\.[^/.]+$/, "");
+                uploadedFileName = uploadedFileName.toString();
 
                 if (URL) {
                     done(URL.createObjectURL(file));
