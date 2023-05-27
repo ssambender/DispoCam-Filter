@@ -3,6 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>DispoCam Filter</title>
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap@4/dist/css/bootstrap.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="cropper.css">
+    <style>
+        .label {
+            cursor: pointer;
+        }
+
+        .progress {
+            display: none;
+            margin-bottom: 1rem;
+        }
+
+        .alert {
+            display: none;
+        }
+
+        .img-container img {
+            max-width: 100%;
+        }
+
+        body {
+            background-color: #c5dc98;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
 </head>
 <style>
     @font-face {
@@ -44,16 +72,17 @@
     <!-- UPLOADED IMAGE | HIDDEN -->
     <div style="text-align:center; display: none;">
         <p>UPLOADED IMAGE:</p>
-        <canvas id="imageCanvas" width="640" height="480" style="border: 2px solid black"></canvas>
+        <canvas id="imageCanvas" width="1500" height="1000" style="border: 2px solid black"></canvas>
     </div>
 
     <!-- UPLOAD IMAGE BUTTON -->
     <div style="text-align:center;">
         <br>
-        <label for="imageInput" class="custom-file-upload imageInputLabel">
+        <label for="input" class="custom-file-upload imageInputLabel">
             UPLOAD IMAGE
         </label>
         <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload()" style="display: none;">
+
     </div>
 
     <!-- LOADING -->
@@ -68,7 +97,7 @@
 
     <!-- RESULT IMAGE -->
     <div id="resultImageDisplay" style="text-align: center; display: none;">
-        <canvas id="resultCanvas" width="640" height="480" style="border: 2px solid black; margin-top: 20px;"></canvas>
+        <canvas id="resultCanvas" width="1500" height="1000" style="border: 2px solid black; margin-top: 20px;"></canvas>
     </div>
     <br>
 
@@ -78,11 +107,57 @@
             <a id="downloadButton" class="imageInputLabel" href="#" download="result_image.png" style="display: none;">DOWNLOAD</a>
         </div>
     </div>
+
+
+
+    <div class="container">
+        <label class="label" data-toggle="tooltip" style="display: none;"> <!-- WHEN THIS IS CLICKED IT WILL OPEN FILES -->
+            <img class="rounded" id="avatar" src="https://avatars0.githubusercontent.com/u/3456749?s=160" alt="avatar" style="display: none;">
+            [ UPLOAD PHOTO ]
+            <input type="file" class="sr-only" id="input" name="image" accept="image/*">
+        </label>
+
+        <!-- Hidden button just so it can simulate to auto-download -->
+        <button id="downloadCroppedButton" style="display: none;">Download Cropped</button>
+
+        <!-- idk what this is | to be removed -->
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+        <!-- initial alert to show if successful | to be removed -->
+        <div class="alert" role="alert"></div>
+
+        <!-- crop image popup -->
+        <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true" data-backdrop="static">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabel">Crop the image</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="img-container">
+                            <img id="image" src="https://avatars0.githubusercontent.com/u/3456749">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="crop">Crop</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 </div>
 
 <script>
 
     let loadingSeconds = 2; // lol it loads instantly but it's kinda exciting waiting for it to finish
+    let tempVarImage;
 
     // Code to animate loading symbol
     var loadingAnimation = document.getElementById("loadingAnimation");
@@ -119,10 +194,12 @@
         // Do after [loadingSeconds] seconds
         setTimeout(function() {
             document.getElementById("loadingAnimationAndStatic").style.display = "none";
-            document.getElementById("resultImageDisplay").style.display = "flex";
+            document.getElementById("resultImageDisplay").style.display = "none";
 
             var input = document.getElementById("imageInput");
+
             var file = input.files[0];
+            file = tempVarImage;
             var reader = new FileReader();
             reader.onload = function (event) {
                 URLToCanvas(event.target.result, "imageCanvas");
@@ -137,7 +214,7 @@
     function applyLUT(imageID, lutID, resultID) {
         var imageContext = document.getElementById(imageID).getContext("2d");
         var lutContext = document.getElementById(lutID).getContext("2d");
-        var imageData = imageContext.getImageData(0, 0, 640, 480);
+        var imageData = imageContext.getImageData(0, 0, 1500, 1000);  // TODO - make size of cropped image
         var lutData = lutContext.getImageData(0, 0, 512, 512);
         for (var i = 0; i < imageData.data.length; i += 4) {
             var r = Math.floor(imageData.data[i] / 4);
@@ -157,6 +234,170 @@
         // Set the download URL to the result canvas data
         document.getElementById("downloadButton").href = document.getElementById(resultID).toDataURL();
     }
+</script>
+
+<script src="https://unpkg.com/jquery@3/dist/jquery.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/bootstrap@4/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="cropper.js"></script>
+<script>
+    function convertDataURLToImage(dataURL) {
+        // Split the data URL into the MIME type and the base64-encoded data
+        const [mime, base64] = dataURL.split(',');
+
+        // Convert base64 data to binary string
+        const binaryString = window.atob(base64);
+
+        // Create a Uint8Array from the binary string
+        const byteArray = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            byteArray[i] = binaryString.charCodeAt(i);
+        }
+
+        // Create a Blob from the Uint8Array and MIME type
+        const blob = new Blob([byteArray.buffer], { type: mime });
+
+        // Create an object URL for the Blob
+        const objectURL = URL.createObjectURL(blob);
+
+        // Create a new Image object
+        const image = new Image();
+
+        // Set the source of the Image object to the object URL
+        image.src = objectURL;
+
+        // Execute further actions once the image is loaded
+        image.onload = function() {
+            // Access the image as needed
+            console.log(image.width, image.height);
+            //tempVarImage = image.src;
+            console.log(image);
+
+            // Clean up the object URL
+            URL.revokeObjectURL(objectURL);
+        };
+    }
+
+    function convertDataURLToFile(dataURL, filename) {
+        // Split the data URL into the MIME type and the base64-encoded data
+        const [mime, base64] = dataURL.split(',');
+
+        // Convert base64 data to binary string
+        const binaryString = window.atob(base64);
+
+        // Create a Uint8Array from the binary string
+        const byteArray = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            byteArray[i] = binaryString.charCodeAt(i);
+        }
+
+        // Create a Blob from the Uint8Array and MIME type
+        const blob = new Blob([byteArray.buffer], { type: mime });
+
+        // Create a File object from the Blob
+        const file = new File([blob], filename, { type: mime });
+
+        return file;
+    }
+
+
+
+
+    window.addEventListener('DOMContentLoaded', function () {
+        var avatar = document.getElementById('avatar');
+        var image = document.getElementById('image');
+        var input = document.getElementById('input');
+        var $progress = $('.progress');
+        var $progressBar = $('.progress-bar');
+        var $alert = $('.alert');
+        var $modal = $('#modal');
+        var cropper;
+
+        $('[data-toggle="tooltip"]').tooltip();
+
+        input.addEventListener('change', function (e) {
+            var files = e.target.files;
+            var done = function (url) {
+                input.value = '';
+                image.src = url;
+                $alert.hide();
+                $modal.modal('show');
+                console.log("This code is called when the file upload is submitted");
+            };
+            var reader;
+            var file;
+            var url;
+
+            if (files && files.length > 0) {
+                file = files[0];
+
+                if (URL) {
+                    done(URL.createObjectURL(file));
+                } else if (FileReader) {
+                    reader = new FileReader();
+                    reader.onload = function (e) {
+                        done(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        $modal.on('shown.bs.modal', function () {
+            cropper = new Cropper(image, {
+                aspectRatio: 3/2,
+                viewMode: 3,
+            });
+        }).on('hidden.bs.modal', function () {
+            cropper.destroy();
+            cropper = null;
+        });
+
+        document.getElementById('crop').addEventListener('click', function () {
+            var initialAvatarURL;
+            var canvas;
+
+            console.log("This code is called after image has been cropped");
+
+            $modal.modal('hide');
+
+            // THE OUTPUT FILE IMAGE QUALITY
+            if (cropper) {
+                canvas = cropper.getCroppedCanvas({
+                    width: 2000,
+                    height: 1000, //Only height matter here because it is smaller
+                });
+                //initialAvatarURL = avatar.src;
+                avatar.src = canvas.toDataURL();
+                // canvas.toDataURL(); is the cropped image
+
+
+                const downloadButton = document.getElementById('downloadCroppedButton');
+
+                const dataUrl = canvas.toDataURL();
+                //tempVarImage = dataUrl;
+
+
+                //convertDataURLToImage(dataUrl);
+
+                tempVarImage = convertDataURLToFile(dataUrl, "temp.png");
+
+                handleImageUpload();
+
+                /*
+                // Create a temporary link element
+                const link = document.createElement('a');
+                // Set the href attribute to the data URL
+                link.href = dataUrl;
+                // Set the download attribute to specify the filename
+                link.download = 'dispocam.png';
+                // Simulate a click on the link element to trigger the download
+                link.click();
+                 */
+
+            }
+        });
+    });
+
 </script>
 
 </body>
