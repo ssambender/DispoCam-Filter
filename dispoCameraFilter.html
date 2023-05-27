@@ -10,7 +10,6 @@
             font-family: digital;
             src: url("Date Stamp Bold.otf") format("opentype");
         }
-
         body {
             margin: 0;
             overflow: hidden;
@@ -20,7 +19,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .imageInputLabel {
             border: solid 2px #db810a;
             color: #db810a;
@@ -33,30 +31,24 @@
             background-color: #db810a;
             color: #fff;
         }
-
-        .progress {
-            display: none;
-            margin-bottom: 1rem;
-        }
-
-        .alert {
-            display: none;
-        }
-
         .img-container img {
             max-width: 100%;
         }
     </style>
 </head>
 <body>
+<!--
+    Thanks to the following two people for helping with color LUT application in JS:
+    https://www.emanueleferonato.com/2018/06/09/playing-with-javascript-photos-and-3d-luts-lookup-tables/
+    https://gist.github.com/kishmiryan-karlen/559c190f6c20856ee323
+-->
 
-<!-- credit: https://www.emanueleferonato.com/2018/06/09/playing-with-javascript-photos-and-3d-luts-lookup-tables/ -->
-<!-- credit: https://gist.github.com/kishmiryan-karlen/559c190f6c20856ee323 -->
-
+<!-- SPLASH DATESTAMP -->
 <div style="position:absolute; bottom: 0; right: 1vw; font-family: digital, monospace; font-size: 2vw; color: #db810a;">
     <div id="homeScreenDate">00 00 '00</div>
 </div>
 
+<!-- MAIN CONTAINER -->
 <div style="width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
     <!-- TITLE -->
     <div style="width: 100vw; display: flex; justify-content: center; align-items: center;">
@@ -81,8 +73,8 @@
 
     </div>
 
-    <!-- LOADING -->
-    <div id="loadingAnimationAndStatic" style="width: 100vw; text-align: center; padding: 20px 0px; font-family: digital, monospace; font-size: 20px; display: none;">
+    <!-- LOADING MESSAGE -->
+    <div id="loadingAnimationAndStatic" style="width: 100vw; text-align: center; padding: 20px 0px; font-family: digital, monospace; font-size: 20px; display: none; color: #fff;">
         LOADING <span id="loadingAnimation"></span>
     </div>
 
@@ -100,28 +92,16 @@
     <!-- DOWNLOAD BUTTON -->
     <div style="text-align: center;">
         <div>
-            <a id="downloadButton" class="imageInputLabel" href="#" download="result_image.png" style="display: none;" onclick="location.reload();">DOWNLOAD</a>
+            <a id="downloadButton" class="imageInputLabel" href="#" download="result_image.png" style="display: none; text-decoration: none;" onclick="location.reload();">DOWNLOAD</a>
         </div>
     </div>
 
-
-
     <div class="container">
-        <label class="label" data-toggle="tooltip" style="display: none;"> <!-- WHEN THIS IS CLICKED IT WILL OPEN FILES -->
-            <img class="rounded" id="avatar" src="https://avatars0.githubusercontent.com/u/3456749?s=160" alt="avatar" style="display: none;">
-            [ UPLOAD PHOTO ]
-            <input type="file" class="sr-only" id="input" name="image" accept="image/*">
-        </label>
+        <img class="rounded" id="avatar" src="" alt="avatar" style="display: none;">
+        <input type="file" class="sr-only" id="input" name="image" accept="image/*">
 
         <!-- Hidden button just so it can simulate to auto-download -->
         <button id="downloadCroppedButton" style="display: none;">Download Cropped</button>
-
-        <!-- idk what this is | to be removed -->
-        <div class="progress">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-        </div>
-        <!-- initial alert to show if successful | to be removed -->
-        <div class="alert" role="alert"></div>
 
         <!-- crop image popup -->
         <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true" data-backdrop="static">
@@ -147,45 +127,36 @@
         </div>
     </div>
 
-
 </div>
 
 <script>
 
-    let loadingSeconds = 2; // lol it loads instantly but it's kinda exciting waiting for it to finish
+    let loadingSeconds = 1; // lol it can load instantly, but it's kinda exciting waiting for it to finish
     let tempVarImage;
 
-
-    // Get the current date
+    // Get current date
     var currentDate = new Date();
-
-    // Extract the day, month, and year
     var day = currentDate.getDate();
-    var month = currentDate.getMonth() + 1; // Month is zero-based
+    var month = currentDate.getMonth() + 1;
     var year = currentDate.getFullYear().toString().slice(-2);
+    document.getElementById('homeScreenDate').innerText = month + ' ' + day + "'" + year;
 
-    // Update the HTML element with the formatted date
-    document.getElementById('homeScreenDate').innerText = month + ' ' + day + ' \'' + year;
-
-
+    // Set a random BG for the splash page
     const backgrounds = ['PINBALL.jpg', 'QUAD.jpg', 'FOX.jpg', 'FLOWERS.jpg'];
     const randomIndex = Math.floor(Math.random() * backgrounds.length);
     document.body.style.background = `url("${backgrounds[randomIndex]}")`;
     document.body.style.backgroundSize = 'cover';
 
-
-    // Code to animate loading symbol
+    // Code to animate loading text/symbol thing
     var loadingAnimation = document.getElementById("loadingAnimation");
     var frames = [".", "..", "...", ""];
     var currentFrame = 0;
-
     setInterval(function () {
         loadingAnimation.textContent = frames[currentFrame];
         currentFrame = (currentFrame + 1) % frames.length;
     }, 400);
 
-
-
+    // ------------------------- Apply the LUT -------------------------------
     var imagesLoaded = 0;
 
     function URLToCanvas(url, id) {
@@ -249,81 +220,32 @@
         // Set the download URL to the result canvas data
         document.getElementById("downloadButton").href = document.getElementById(resultID).toDataURL();
     }
+    // -----------------------------------------------------------------------
 </script>
 
 <script src="https://unpkg.com/jquery@3/dist/jquery.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/bootstrap@4/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 <script src="cropper.js"></script>
 <script>
-    function convertDataURLToImage(dataURL) {
-        // Split the data URL into the MIME type and the base64-encoded data
-        const [mime, base64] = dataURL.split(',');
-
-        // Convert base64 data to binary string
-        const binaryString = window.atob(base64);
-
-        // Create a Uint8Array from the binary string
-        const byteArray = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            byteArray[i] = binaryString.charCodeAt(i);
-        }
-
-        // Create a Blob from the Uint8Array and MIME type
-        const blob = new Blob([byteArray.buffer], { type: mime });
-
-        // Create an object URL for the Blob
-        const objectURL = URL.createObjectURL(blob);
-
-        // Create a new Image object
-        const image = new Image();
-
-        // Set the source of the Image object to the object URL
-        image.src = objectURL;
-
-        // Execute further actions once the image is loaded
-        image.onload = function() {
-            // Access the image as needed
-            console.log(image.width, image.height);
-            //tempVarImage = image.src;
-            console.log(image);
-
-            // Clean up the object URL
-            URL.revokeObjectURL(objectURL);
-        };
-    }
-
+    // Converts the cropped pictuer to a file, so it can be used with the LUT function
     function convertDataURLToFile(dataURL, filename) {
-        // Split the data URL into the MIME type and the base64-encoded data
         const [mime, base64] = dataURL.split(',');
-
-        // Convert base64 data to binary string
         const binaryString = window.atob(base64);
-
-        // Create a Uint8Array from the binary string
         const byteArray = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
             byteArray[i] = binaryString.charCodeAt(i);
         }
-
-        // Create a Blob from the Uint8Array and MIME type
         const blob = new Blob([byteArray.buffer], { type: mime });
-
-        // Create a File object from the Blob
         const file = new File([blob], filename, { type: mime });
 
         return file;
     }
 
-
-
-
+    // Set stuff up on page load
     window.addEventListener('DOMContentLoaded', function () {
         var avatar = document.getElementById('avatar');
         var image = document.getElementById('image');
         var input = document.getElementById('input');
-        var $progress = $('.progress');
-        var $progressBar = $('.progress-bar');
-        var $alert = $('.alert');
         var $modal = $('#modal');
         var cropper;
 
@@ -334,9 +256,7 @@
             var done = function (url) {
                 input.value = '';
                 image.src = url;
-                $alert.hide();
                 $modal.modal('show');
-                console.log("This code is called when the file upload is submitted");
             };
             var reader;
             var file;
@@ -359,8 +279,8 @@
 
         $modal.on('shown.bs.modal', function () {
             cropper = new Cropper(image, {
-                aspectRatio: 3/2,
-                viewMode: 3,
+                aspectRatio: 3/2, // The aspect ratio - disposable cameras are usually 3:2 I think
+                viewMode: 3, // Changes nav mode on crop modal
             });
         }).on('hidden.bs.modal', function () {
             cropper.destroy();
@@ -368,10 +288,7 @@
         });
 
         document.getElementById('crop').addEventListener('click', function () {
-            var initialAvatarURL;
             var canvas;
-
-            console.log("This code is called after image has been cropped");
 
             $modal.modal('hide');
 
@@ -379,40 +296,18 @@
             if (cropper) {
                 canvas = cropper.getCroppedCanvas({
                     width: 2000,
-                    height: 1000, //Only height matter here because it is smaller
+                    height: 1000, //Only height matter here because it is the limiting dimension
                 });
-                //initialAvatarURL = avatar.src;
                 avatar.src = canvas.toDataURL();
-                // canvas.toDataURL(); is the cropped image
-
-
-                const downloadButton = document.getElementById('downloadCroppedButton');
 
                 const dataUrl = canvas.toDataURL();
-                //tempVarImage = dataUrl;
 
-
-                //convertDataURLToImage(dataUrl);
-
+                // Basically faking the color LUT function to thinking user uploaded a new image
                 tempVarImage = convertDataURLToFile(dataUrl, "temp.png");
-
                 handleImageUpload();
-
-                /*
-                // Create a temporary link element
-                const link = document.createElement('a');
-                // Set the href attribute to the data URL
-                link.href = dataUrl;
-                // Set the download attribute to specify the filename
-                link.download = 'dispocam.png';
-                // Simulate a click on the link element to trigger the download
-                link.click();
-                 */
-
             }
         });
     });
-
 </script>
 
 </body>
