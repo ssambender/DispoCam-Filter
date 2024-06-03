@@ -1,3 +1,7 @@
+<h3 align="center">
+  <a href="https://ssambender.github.io/DispoCam-Filter-2/">DISPOCAM FILTER V2 OUT NOW!</a>
+</h3>
+
 # DispoCam-Filter
 ### Disposable camera filter effect for uploaded images.
 - Upload any format of image file
